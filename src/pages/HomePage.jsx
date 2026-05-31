@@ -1,8 +1,140 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useLang } from '../context/AppContext'
 import { translations } from '../data/translations'
 import { projectsData } from '../data/projects'
+
+const CODE_LINES = [
+  { text: 'const developer = {', delay: 0 },
+  { text: '  name: "Thanakorn",', delay: 0 },
+  { text: '  role: "Full-stack Dev",', delay: 0 },
+  { text: '  skills: [', delay: 0 },
+  { text: '    "React", "Node.js",', delay: 0 },
+  { text: '    "MySQL", "Socket.IO"', delay: 0 },
+  { text: '  ],', delay: 0 },
+  { text: '  passion: "Building apps",', delay: 0 },
+  { text: '  available: true,', delay: 0 },
+  { text: '};', delay: 0 },
+]
+
+const ORBIT_ICONS = [
+  { icon: 'html', angle: 0 },
+  { icon: 'javascript', angle: 60 },
+  { icon: 'database', angle: 120 },
+  { icon: 'bolt', angle: 180 },
+  { icon: 'smartphone', angle: 240 },
+  { icon: 'terminal', angle: 300 },
+]
+
+function HeroTerminal() {
+  const [visibleLines, setVisibleLines] = useState(0)
+  const [charIndex, setCharIndex] = useState(0)
+  const intervalRef = useRef(null)
+  const lineRef = useRef(0)
+
+  useEffect(() => {
+    const startDelay = setTimeout(() => {
+      intervalRef.current = setInterval(() => {
+        setVisibleLines((prev) => {
+          const currentLine = CODE_LINES[prev]
+          if (!currentLine) {
+            clearInterval(intervalRef.current)
+            return prev
+          }
+          return prev + 1
+        })
+      }, 280)
+    }, 600)
+
+    return () => {
+      clearTimeout(startDelay)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
+
+  return (
+    <div className="hero-terminal-wrapper">
+      {/* Glowing orbs */}
+      <div className="hero-orb hero-orb-1" />
+      <div className="hero-orb hero-orb-2" />
+
+      {/* Floating orbit icons */}
+      <div className="hero-orbit">
+        {ORBIT_ICONS.map((item, i) => (
+          <div
+            key={item.icon}
+            className="hero-orbit-icon"
+            style={{
+              '--angle': `${item.angle}deg`,
+              '--delay': `${i * -2}s`,
+            }}
+          >
+            <span className="material-symbols-outlined">{item.icon}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Terminal window */}
+      <div className="hero-terminal hero-float">
+        <div className="hero-terminal-bar">
+          <span className="hero-dot hero-dot-red" />
+          <span className="hero-dot hero-dot-yellow" />
+          <span className="hero-dot hero-dot-green" />
+          <span className="hero-terminal-title">developer.js</span>
+        </div>
+        <div className="hero-terminal-body">
+          {CODE_LINES.slice(0, visibleLines).map((line, i) => (
+            <div key={i} className="hero-code-line" style={{ animationDelay: `${i * 0.05}s` }}>
+              <span className="hero-line-num">{i + 1}</span>
+              <span className="hero-line-text">
+                <CodeHighlight text={line.text} />
+              </span>
+            </div>
+          ))}
+          {visibleLines < CODE_LINES.length && (
+            <div className="hero-code-line">
+              <span className="hero-line-num">{visibleLines + 1}</span>
+              <span className="hero-cursor">|</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CodeHighlight({ text }) {
+  // Simple syntax highlighting
+  const highlighted = text
+    .replace(/(const|true|false)/g, '<kw>$1</kw>')
+    .replace(/(".*?")/g, '<str>$1</str>')
+    .replace(/(\w+):/g, '<prop>$1</prop>:')
+    .replace(/([{}[\],;])/g, '<punc>$1</punc>')
+
+  const parts = []
+  const regex = /<(kw|str|prop|punc)>(.*?)<\/\1>/g
+  let lastIndex = 0
+  let match
+
+  while ((match = regex.exec(highlighted)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(<span key={lastIndex}>{highlighted.slice(lastIndex, match.index)}</span>)
+    }
+    const cls = {
+      kw: 'hero-syn-keyword',
+      str: 'hero-syn-string',
+      prop: 'hero-syn-prop',
+      punc: 'hero-syn-punc',
+    }[match[1]]
+    parts.push(<span key={match.index} className={cls}>{match[2]}</span>)
+    lastIndex = regex.lastIndex
+  }
+  if (lastIndex < highlighted.length) {
+    parts.push(<span key={lastIndex}>{highlighted.slice(lastIndex)}</span>)
+  }
+
+  return <>{parts}</>
+}
 
 const SKILLS = [
   { icon: 'html', label: 'React.js' },
@@ -95,18 +227,7 @@ export function HomePage() {
             </div>
           </div>
           <div className="hero-img-anim relative">
-            <div className="hero-float aspect-square w-full max-w-md mx-auto overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 p-4 lg:max-w-none">
-              <div className="h-full w-full rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                <img
-                  className="h-full w-full object-cover opacity-90 mix-blend-overlay"
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2576&auto=format&fit=crop"
-                  alt=""
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-9xl opacity-20">code</span>
-                </div>
-              </div>
-            </div>
+            <HeroTerminal />
           </div>
         </div>
       </section>
